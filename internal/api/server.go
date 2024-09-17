@@ -1,4 +1,4 @@
-package api
+package app
 
 import (
 	"html/template"
@@ -8,7 +8,138 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"RIP/internal/app/config"
+	"RIP/internal/app/dsn"
+	"RIP/internal/app/repository"
 )
+
+type Application struct {
+	repo   *repository.Repository
+	config *config.Config
+	// dsn string
+}
+
+func (a *Application) Run() {
+	log.Println("Server start up")
+
+	r := gin.Default()
+
+	r.SetFuncMap(template.FuncMap{
+		"replaceNewline": func(text string) template.HTML {
+			return template.HTML(strings.ReplaceAll(text, "\n", "<br>"))
+		},
+		"contains": func(s, substr string) bool {
+			return strings.Contains(s, substr)
+		},
+	})
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+
+	r.LoadHTMLGlob("templates/*")
+	r.Static("/css", "./resources/css")
+
+	r.GET("/cards", func(c *gin.Context) {
+		query := c.Query("query") // Получаем поисковый запрос из URL
+		log.Printf("query recived %s\n", query)
+		cards, err := a.repo.GetAllCards()
+		if err != nil { // если не получилось
+			log.Printf("cant get product by id %v", err)
+			c.Error(err)
+			return
+		}
+		if query == "en" {
+			c.HTML(http.StatusOK, "home.html", gin.H{
+				"title":      "Main website",
+				"first_row":  cards,
+				"second_row": "",
+				"query":      query,
+			})
+		} else if query == "de" {
+			c.HTML(http.StatusOK, "home.html", gin.H{
+				"title":      "Main website",
+				"first_row":  cards,
+				"second_row": "",
+				"query":      query,
+			})
+		} else {
+			c.HTML(http.StatusOK, "home.html", gin.H{
+				"title":      "Main website",
+				"first_row":  cards,
+				"second_row": "",
+				"query":      query,
+			})
+		}
+	})
+
+	r.GET("/cart", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "cart.html", gin.H{
+			"title":     "Main website",
+			"card_data": CartInfoFunc(),
+		})
+	})
+
+	r.GET("/card/:id", func(c *gin.Context) {
+		id := c.Param("id") // Получаем ID из URL
+		index, err := strconv.Atoi(id)
+
+		if err != nil || index < 0 || index > len(CardsInfoFunc("")) {
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		c.HTML(http.StatusOK, "card.html", gin.H{
+			"title":     "Main website",
+			"card_data": CardsInfoFunc("")[index-1],
+		})
+	})
+
+	r.Static("/image", "./resources")
+
+	r.GET("/product", func(c *gin.Context) {
+		id := c.Query("id") // получаем из запроса query string
+
+		if id != "" {
+			log.Printf("id recived %s\n", id)
+			product, err := a.repo.GetCardByType(true)
+			if err != nil { // если не получилось
+				log.Printf("cant get product by id %v", err)
+				c.Error(err)
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"product_price": product[0].Name,
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "try with id",
+		})
+	})
+	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	log.Println("Server down")
+}
+
+func New() (*Application, error) {
+	var err error
+	app := Application{}
+	app.config, err = config.NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	app.repo, err = repository.New(dsn.FromEnv())
+	if err != nil {
+		return nil, err
+	}
+
+	return &app, nil
+}
 
 type Element struct {
 	Id          int
@@ -61,84 +192,4 @@ func CartInfoFunc() []Cart {
 		{2, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", "Текст: \n1010 1000 0000 1111 1001 0011 0101 0110 0000 1100 1010"},
 		{2, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", "Текст: \n1010 1100 0000 1111 1001 0011 0101 0110 0000 1100 1010"},
 	}
-}
-
-func StartServer() {
-	log.Println("Server start up")
-
-	r := gin.Default()
-
-	r.SetFuncMap(template.FuncMap{
-		"replaceNewline": func(text string) template.HTML {
-			return template.HTML(strings.ReplaceAll(text, "\n", "<br>"))
-		},
-		"contains": func(s, substr string) bool {
-			return strings.Contains(s, substr)
-		},
-	})
-
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-
-	r.LoadHTMLGlob("templates/*")
-	r.Static("/css", "./resources/css")
-
-	r.GET("/cards", func(c *gin.Context) {
-		query := c.Query("query") // Получаем поисковый запрос из URL
-		first_row := CardsInfoFunc("en")
-		second_row := CardsInfoFunc("de")
-		if query == "en" {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  first_row,
-				"second_row": "",
-				"query":      query,
-			})
-		} else if query == "de" {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  second_row,
-				"second_row": "",
-				"query":      query,
-			})
-		} else {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  first_row,
-				"second_row": second_row,
-				"query":      query,
-			})
-		}
-	})
-
-	r.GET("/cart", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "cart.html", gin.H{
-			"title":     "Main website",
-			"card_data": CartInfoFunc(),
-		})
-	})
-
-	r.GET("/card/:id", func(c *gin.Context) {
-		id := c.Param("id") // Получаем ID из URL
-		index, err := strconv.Atoi(id)
-
-		if err != nil || index < 0 || index > len(CardsInfoFunc("")) {
-			c.String(http.StatusBadRequest, "Invalid ID")
-			return
-		}
-
-		c.HTML(http.StatusOK, "card.html", gin.H{
-			"title":     "Main website",
-			"card_data": CardsInfoFunc("")[index-1],
-		})
-	})
-
-	r.Static("/image", "./resources")
-
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
-
-	log.Println("Server down")
 }

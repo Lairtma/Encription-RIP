@@ -1,13 +1,15 @@
 package main
 
 import (
-	"log"
-
 	"RIP/internal/api"
+	"log"
 )
 
 func main() {
-	log.Println("Server start up")
-	api.StartServer()
-	log.Println("Server down")
+	app, err := app.New()
+	if err != nil {
+		log.Println("app can not be created", err)
+		return
+	}
+	app.Run()
 }

@@ -46,19 +46,5 @@
     </div>
     {{ end }}
 </div>
-<div class="cards">
-    {{ range .second_row }}
-    <div class="card">
-        <div class="info">
-            <img src="{{ .First_img }}" class="card_img">
-            <p class="card_text text">{{ .Name }}</p>
-        </div>
-        <div class="down">
-            <button onclick="window.location = 'http://localhost:8080/card/{{ .Id }}'" class="card_button btn text">Подробнее</button>
-            <img src="{{ .Second_img }}" class="card_img">
-        </div>
-    </div>
-    {{ end }}
-</div>
 </body>
 </html>
