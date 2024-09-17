@@ -89,28 +89,12 @@ func StartServer() {
 	r.GET("/cards", func(c *gin.Context) {
 		query := c.Query("query") // Получаем поисковый запрос из URL
 
-		if query == "en" {
-			first_row := CardsInfoFunc("en")
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":     "Main website",
-				"first_row": first_row,
-				"query":     query,
-			})
-		} else if query == "de" {
-			first_row := CardsInfoFunc("de")
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":     "Main website",
-				"first_row": first_row,
-				"query":     query,
-			})
-		} else {
-			first_row := CardsInfoFunc("")
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":     "Main website",
-				"first_row": first_row,
-				"query":     query,
-			})
-		}
+		first_row := CardsInfoFunc(query)
+		c.HTML(http.StatusOK, "home.html", gin.H{
+			"title":     "Main website",
+			"first_row": first_row,
+			"query":     query,
+		})
 	})
 
 	r.GET("/cart", func(c *gin.Context) {
