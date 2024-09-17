@@ -39,7 +39,6 @@ body {
     width: 20%;
 }
 .cart_btn {
-    margin-left: 74%;
     flex-direction: row;
     display: inline;
     border-radius: 5px;
@@ -48,6 +47,8 @@ body {
 }
 .down_nav {
     margin: 40px 0px;
+    padding: 0px 2%;
+    display: flex;
     justify-content: space-between;
 }
 .selector {
@@ -107,4 +108,7 @@ body {
 .down p{
     font-size: 16px;
     font-weight: 700;
+}
+.add_btn {
+    background-color: #A8F29A;
 }

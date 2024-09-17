@@ -1,6 +1,9 @@
 package app
 
 import (
+	"RIP/internal/app/ds"
+	"errors"
+	"gorm.io/gorm"
 	"html/template"
 	"log"
 	"net/http"
@@ -27,7 +30,7 @@ func (a *Application) Run() {
 
 	r.SetFuncMap(template.FuncMap{
 		"replaceNewline": func(text string) template.HTML {
-			return template.HTML(strings.ReplaceAll(text, "\n", "<br>"))
+			return template.HTML(strings.ReplaceAll(text, "/n", "<br>"))
 		},
 		"contains": func(s, substr string) bool {
 			return strings.Contains(s, substr)
@@ -46,81 +49,132 @@ func (a *Application) Run() {
 	r.GET("/cards", func(c *gin.Context) {
 		query := c.Query("query") // Получаем поисковый запрос из URL
 		log.Printf("query recived %s\n", query)
-		cards, err := a.repo.GetAllCards()
-		if err != nil { // если не получилось
-			log.Printf("cant get product by id %v", err)
+		var cards []ds.Card
+		var err error
+		if query != "" {
+			var encryption bool
+			if query == "en" {
+				encryption = true
+			} else {
+				encryption = false
+			}
+			cards, err = a.repo.GetCardByType(encryption)
+			if err != nil { // если не получилось
+				log.Printf("cant get cards by type %v", err)
+				c.Error(err)
+				return
+			}
+		} else {
+			cards, err = a.repo.GetAllCards()
+			if err != nil { // если не получилось
+				log.Printf("cant get cards  %v", err)
+				c.Error(err)
+				return
+			}
+		}
+		var cart_len, cart_id int
+		cart, err := a.repo.GetLastCartByCreatorId(1)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			cart_len = 0
+			cart_id = 0
+		} else if err != nil { // если не получилось
+			log.Printf("cant get cart  %v", err)
 			c.Error(err)
 			return
-		}
-		if query == "en" {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  cards,
-				"second_row": "",
-				"query":      query,
-			})
-		} else if query == "de" {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  cards,
-				"second_row": "",
-				"query":      query,
-			})
 		} else {
-			c.HTML(http.StatusOK, "home.html", gin.H{
-				"title":      "Main website",
-				"first_row":  cards,
-				"second_row": "",
-				"query":      query,
-			})
+			cart_id = int(cart.Id)
+			cartCards, err := a.repo.GetCartCardsByCartId(int(cart.Id))
+			if err != nil { // если не получилось
+				log.Printf("cant get cartCards  %v", err)
+				c.Error(err)
+				return
+			}
+			cart_len = min(len(cartCards), 10)
 		}
+		c.HTML(http.StatusOK, "home.html", gin.H{
+			"title":     "Main website",
+			"first_row": cards,
+			"query":     query,
+			"cart_len":  cart_len,
+			"cart_id":   cart_id,
+		})
 	})
 
-	r.GET("/cart", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "cart.html", gin.H{
-			"title":     "Main website",
-			"card_data": CartInfoFunc(),
-		})
+	r.GET("/cart/:id", func(c *gin.Context) {
+		id := c.Param("id") // Получаем ID из URL
+		index, err := strconv.Atoi(id)
+		if err != nil { // если не получилось
+			log.Printf("cant get card by id %v", err)
+			c.Error(err)
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		if index == 0 {
+			c.HTML(http.StatusOK, "cart.html", gin.H{
+				"title":     "Main website",
+				"card_data": [0]Cart{},
+			})
+		} else {
+
+			cart, err := a.repo.GetCardByID(index)
+			if err != nil { // если не получилось
+				log.Printf("cant get card by id %v", err)
+				c.Error(err)
+				c.String(http.StatusBadRequest, "Invalid ID")
+				return
+			}
+
+			cartCards, err := a.repo.GetCartCardsByCartId(int(cart.Id))
+			if err != nil { // если не получилось
+				log.Printf("cant get cartCards  %v", err)
+				c.Error(err)
+				return
+			}
+			var cart_html []Cart
+			for _, cart_card := range cartCards {
+				card, err := a.repo.GetCardByID(int(cart_card.CardId))
+				if err != nil { // если не получилось
+					log.Printf("cant get cartCards  %v", err)
+					c.Error(err)
+					return
+				}
+				cart_html = append(cart_html, Cart{card.Name, card.First_img, card.Second_img, cart_card.Text})
+			}
+
+			c.HTML(http.StatusOK, "cart.html", gin.H{
+				"title":     "Main website",
+				"card_data": cart_html,
+			})
+		}
 	})
 
 	r.GET("/card/:id", func(c *gin.Context) {
 		id := c.Param("id") // Получаем ID из URL
 		index, err := strconv.Atoi(id)
+		if err != nil { // если не получилось
+			log.Printf("cant get card by id %v", err)
+			c.Error(err)
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
 
-		if err != nil || index < 0 || index > len(CardsInfoFunc("")) {
+		card, err := a.repo.GetCardByID(index)
+		if err != nil { // если не получилось
+			log.Printf("cant get card by id %v", err)
+			c.Error(err)
 			c.String(http.StatusBadRequest, "Invalid ID")
 			return
 		}
 
 		c.HTML(http.StatusOK, "card.html", gin.H{
 			"title":     "Main website",
-			"card_data": CardsInfoFunc("")[index-1],
+			"card_data": card,
 		})
 	})
 
 	r.Static("/image", "./resources")
 
-	r.GET("/product", func(c *gin.Context) {
-		id := c.Query("id") // получаем из запроса query string
-
-		if id != "" {
-			log.Printf("id recived %s\n", id)
-			product, err := a.repo.GetCardByType(true)
-			if err != nil { // если не получилось
-				log.Printf("cant get product by id %v", err)
-				c.Error(err)
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"product_price": product[0].Name,
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"message": "try with id",
-		})
-	})
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
 }
@@ -141,55 +195,9 @@ func New() (*Application, error) {
 	return &app, nil
 }
 
-type Element struct {
-	Id          int
-	Name        string
-	First_img   string
-	Second_img  string
-	Encrypting  bool
-	Description string
-}
-
 type Cart struct {
-	Id         int
 	Name       string
 	First_img  string
 	Second_img string
 	Text       string
-}
-
-func CardsInfoFunc(tpe string) []Element {
-	if tpe == "en" {
-		return []Element{
-			{1, "Шифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, ""},
-			{2, "Шифрование с контрольной суммой", "http://localhost:9000/lab1/%D0%A1%D1%83%D0%BC%D0%BC%D0%B0.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, ""},
-			{3, "Шифрование с повторением битов", "http://localhost:9000/lab1/%D0%BF%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B5%D0%BD%D0%B8%D0%B5.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, ""},
-			{4, "Шифрование кодом Хэмминга", "http://localhost:9000/lab1/%D1%85%D1%8D%D0%BC%D0%B8%D0%BD%D0%B3.jpg", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, ""},
-		}
-	} else if tpe == "de" {
-		return []Element{
-			{5, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, ""},
-			{6, "Дешифрование с контрольной суммой", "http://localhost:9000/lab1/%D0%A1%D1%83%D0%BC%D0%BC%D0%B0.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, ""},
-			{7, "Дешифрование с повторением битов", "http://localhost:9000/lab1/%D0%BF%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B5%D0%BD%D0%B8%D0%B5.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, ""},
-			{8, "Дешифрование кодом Хэмминга", "http://localhost:9000/lab1/%D1%85%D1%8D%D0%BC%D0%B8%D0%BD%D0%B3.jpg", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, ""},
-		}
-	}
-	return []Element{
-		{1, "Шифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, "Описание:\nВ каждом пакет данных есть один бит четности, или, так называемый, паритетный бит. Этот бит устанавливается во время записи (или отправки) данных, и затем рассчитывается и сравнивается во время чтения (получения) данных. Он равен сумме по модулю 2 всех бит данных в пакете. То есть число единиц в пакете всегда будет четно . Изменение этого бита (например с 0 на 1) сообщает о возникшей ошибке."},
-		{2, "Шифрование с контрольной суммой", "http://localhost:9000/lab1/%D0%A1%D1%83%D0%BC%D0%BC%D0%B0.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, "Описание: \nВ общем виде контрольная сумма представляет собой некоторое значение, вычисленное по определённой схеме на основе кодируемого сообщения. Проверочная информация при систематическом кодировании приписывается к передаваемым данным. На принимающей стороне абонент знает алгоритм вычисления контрольной суммы: соответственно, программа имеет возможность проверить корректность принятых данных.\nПри передаче пакетов по сетевому каналу могут возникнуть искажения исходной информации вследствие разных внешних воздействий: электрических наводок, плохих погодных условий и многих других. Сущность методики в том, что при хороших характеристиках контрольной суммы в подавляющем числе случаев ошибка в сообщении приведёт к изменению его контрольной суммы. Если исходная и вычисленная суммы не равны между собой, принимается решение о недостоверности принятых данных, и можно запросить повторную передачу пакета."},
-		{3, "Шифрование с повторением битов", "http://localhost:9000/lab1/%D0%BF%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B5%D0%BD%D0%B8%D0%B5.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, "Описание: \n Если с ошибкой произойдет передача одного бита из трех, то ошибка будет исправлена, но если случится двойная или тройная ошибка, то будут получены неправильные данные. Часто коды для исправления ошибок используют совместно с кодами для обнаружения ошибок. При тройном повторении для повышения надежности три бита располагают не подряд, а на фиксированном расстоянии друг от друга. Использование тройного повторения естественно значительно снижает скорость передачи данных."},
-		{4, "Шифрование кодом Хэмминга", "http://localhost:9000/lab1/%D1%85%D1%8D%D0%BC%D0%B8%D0%BD%D0%B3.jpg", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", true, "Описание: \n Для каждого числа проверочных символов используется специальная маркировка вида (k, i), где k — количество символов в сообщении, i — количество информационных символов в сообщении. Например, существуют коды (7, 4), (15, 11), (31, 26). Каждый проверочный символ в коде Хэмминга представляет сумму по модулю 2 некоторой подпоследовательности данных."},
-		{5, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, "Описание:\nВ каждом пакет данных есть один бит четности, или, так называемый, паритетный бит. Этот бит устанавливается во время записи (или отправки) данных, и затем рассчитывается и сравнивается во время чтения (получения) данных. Он равен сумме по модулю 2 всех бит данных в пакете. То есть число единиц в пакете всегда будет четно . Изменение этого бита (например с 0 на 1) сообщает о возникшей ошибке."},
-		{6, "Дешифрование с контрольной суммой", "http://localhost:9000/lab1/%D0%A1%D1%83%D0%BC%D0%BC%D0%B0.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, "Описание: \nВ общем виде контрольная сумма представляет собой некоторое значение, вычисленное по определённой схеме на основе кодируемого сообщения. Проверочная информация при систематическом кодировании приписывается к передаваемым данным. На принимающей стороне абонент знает алгоритм вычисления контрольной суммы: соответственно, программа имеет возможность проверить корректность принятых данных.\nПри передаче пакетов по сетевому каналу могут возникнуть искажения исходной информации вследствие разных внешних воздействий: электрических наводок, плохих погодных условий и многих других. Сущность методики в том, что при хороших характеристиках контрольной суммы в подавляющем числе случаев ошибка в сообщении приведёт к изменению его контрольной суммы. Если исходная и вычисленная суммы не равны между собой, принимается решение о недостоверности принятых данных, и можно запросить повторную передачу пакета."},
-		{7, "Дешифрование с повторением битов", "http://localhost:9000/lab1/%D0%BF%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%B5%D0%BD%D0%B8%D0%B5.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, "Описание: \n Если с ошибкой произойдет передача одного бита из трех, то ошибка будет исправлена, но если случится двойная или тройная ошибка, то будут получены неправильные данные. Часто коды для исправления ошибок используют совместно с кодами для обнаружения ошибок. При тройном повторении для повышения надежности три бита располагают не подряд, а на фиксированном расстоянии друг от друга. Использование тройного повторения естественно значительно снижает скорость передачи данных."},
-		{8, "Дешифрование кодом Хэмминга", "http://localhost:9000/lab1/%D1%85%D1%8D%D0%BC%D0%B8%D0%BD%D0%B3.jpg", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", false, "Описание: \n Для каждого числа проверочных символов используется специальная маркировка вида (k, i), где k — количество символов в сообщении, i — количество информационных символов в сообщении. Например, существуют коды (7, 4), (15, 11), (31, 26). Каждый проверочный символ в коде Хэмминга представляет сумму по модулю 2 некоторой подпоследовательности данных."},
-	}
-}
-
-func CartInfoFunc() []Cart {
-	return []Cart{
-		{1, "Шифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", "Текст: \nПривет, мир"},
-		{2, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", "Текст: \n1010 1000 0000 1111 1001 0011 0101 0110 0000 1100 1010"},
-		{2, "Дешифрование с битом чётности", "http://localhost:9000/lab1/%D1%87%D1%91%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C.png", "http://localhost:9000/lab1/%D0%B4%D0%B5%D1%88%D0%B8%D1%84%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5.png", "Текст: \n1010 1100 0000 1111 1001 0011 0101 0110 0000 1100 1010"},
-	}
 }

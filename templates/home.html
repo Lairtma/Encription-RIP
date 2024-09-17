@@ -27,8 +27,8 @@
         <option value="de" >Дешифрование</option>
         {{ end }}
     </select>
-    <button class="btn cart_btn" onclick="window.location = 'http://localhost:8080/cart'">
-        <img src="http://localhost:9000/lab1/3.png" class="cart_img">
+    <button class="btn cart_btn" onclick="window.location = 'http://localhost:8080/cart/{{ .cart_id }}'">
+        <img src="http://localhost:9000/lab1/{{ .cart_len }}.png" class="cart_img">
         <p class="cart_text text">Заявка</p>
     </button>
 </div>
@@ -41,6 +41,7 @@
         </div>
         <div class="down">
             <button onclick="window.location = 'http://localhost:8080/card/{{ .Id }}'" class="card_button btn text">Подробнее</button>
+            <button onclick="window.location = 'http://localhost:8080/card/{{ .Id }}'" class="card_button btn text add_btn">Добавить в заявку</button>
             <img src="{{ .Second_img }}" class="card_img">
         </div>
     </div>

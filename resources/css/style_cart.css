@@ -6,6 +6,9 @@ body {
     background-color: #544C4C;
     box-shadow: none;
 }
+h2 {
+    color: white;
+}
 .text {
     font-family: "Raleway", sans-serif;
     font-size: 15px;
@@ -47,8 +50,10 @@ body {
     height: 50px;
 }
 .down_nav {
-    margin: 40px 0px;
+    padding: 0px 2%;
+    display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 .selector {
     width: 300px;
@@ -122,4 +127,8 @@ body {
     display: flex;
     justify-content: center;
     text-align: center;
+}
+.del_btn {
+    background-color: #F29AA8;
+    height: 50px;
 }
