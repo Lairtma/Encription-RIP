@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/css/textsencordec.css">
+    <title>{{.title}}</title>
+</head>
+<body>
+<header>
+    <div class="nav">
+        <button class="home_btn btn" onclick="window.location = 'http://localhost:8080/textsencordec'">
+            <img src="http://localhost:9000/lab1/%D0%B4%D0%BE%D0%BC.png" class="home_img">
+        </button>
+    </div>
+</header>
+<div class="down_nav">
+    <select name="type" id="type" class="selector btn text" onchange="window.location = 'http://localhost:8080/textsencordec?query=' + this.value">
+        <option class="select_option" value="">Тип</option>
+        {{ if contains .query "en" }}
+        <option class="select_option" value="en" selected>Изначальный</option>
+        <option class="select_option" value="de">Закодированный</option>
+        {{ else if contains .query "de" }}
+        <option class="select_option" value="en" >Изначальный</option>
+        <option class="select_option" value="de" selected>Закодированный</option>
+        {{ else }}
+        <option class="select_option" value="en" >Изначальный</option>
+        <option class="select_option" value="de" >Закодированный</option>
+        {{ end }}
+    </select>
+    <button class="btn cart_btn" onclick="window.location = 'http://localhost:8080/encordecorder/1'">
+        <img src="http://localhost:9000/lab1/{{.len}}.png" class="cart_img">
+        <p class="cart_text text">Заявка</p>
+    </button>
+</div>
+<div class="cards">
+    {{ range .first_row }}
+    <div class="card">
+        <div class="info">
+            <img src="{{ .Img }}" class="card_img">
+            <p class="card_text text">{{ if .Enc }}Изначальный{{else}}Закодированный{{end}}</p>
+            <br>
+            <p class="card_text text">{{ replaceNewline .Text }}</p>
+        </div>
+        <div class="down">
+            <button onclick="window.location = 'http://localhost:8080/text/{{ .Id }}'" class="card_button btn text">Подробнее</button>
+        </div>
+    </div>
+    {{ end }}
+</div>
+</body>
+</html>
