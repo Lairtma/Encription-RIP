@@ -27,7 +27,7 @@
         <option class="select_option" value="de" >Закодированный</option>
         {{ end }}
     </select>
-    <button class="btn cart_btn" onclick="window.location = 'http://localhost:8080/encordecorder/1'">
+    <button class="btn cart_btn" onclick="window.location = 'http://localhost:8080/encordecorder/{{ .order_id }}'" {{if eq .len 0}} disabled {{end}}>
         <img src="http://localhost:9000/lab1/{{.len}}.png" class="cart_img">
         <p class="cart_text text">Заявка</p>
     </button>

@@ -7,7 +7,10 @@ import (
 )
 
 func main() {
-	log.Println("Server start up")
-	api.StartServer()
-	log.Println("Server down")
+	app, err := api.New()
+	if err != nil {
+		log.Println("app can not be created", err)
+		return
+	}
+	app.Run()
 }
