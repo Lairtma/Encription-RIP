@@ -32,9 +32,9 @@ func (r *Repository) GetAllTexts() ([]ds.TextToEncOrDec, error) {
 	}
 	return prods, nil
 }
-func (r *Repository) GetTextByID(textId int) ([]ds.TextToEncOrDec, error) {
-	var text []ds.TextToEncOrDec
-	err := r.db.Where("id = ?", textId).Find(&text).Error
+func (r *Repository) GetTextByID(textId int) (*ds.TextToEncOrDec, error) {
+	text := &ds.TextToEncOrDec{}
+	err := r.db.Where("id = ?", textId).First(text).Error
 	if err != nil {
 		return nil, err
 	}

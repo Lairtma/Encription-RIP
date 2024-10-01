@@ -6,4 +6,6 @@ type OrderText struct {
 	Order    EncOrDecOrder  `gorm:"primaryKey;foreignKey:OrderID"`
 	Text     TextToEncOrDec `gorm:"primaryKey;foreignKey:TextID"`
 	Position int
+	EncType  string
+	Res      string
 }

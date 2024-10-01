@@ -20,11 +20,11 @@
     {{ range .card_data }}
     <div class="card">
         <div class="info">
-            <img src="{{ .Img }}" class="card_img">
+            <img src="{{ .Text.Img }}" class="card_img">
             <p class="card_text text">{{ replaceNewline .EncType }}</p>
         </div>
         <div class="task">
-            <p class="text description">{{ replaceNewline .Text }}</p>
+            <p class="text description">{{ replaceNewline .Text.Text }}</p>
         </div>
     </div>
     {{ end }}

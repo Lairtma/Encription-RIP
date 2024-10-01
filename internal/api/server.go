@@ -19,6 +19,12 @@ type Application struct {
 	config *config.Config
 }
 
+type OrderShowText struct {
+	Text    ds.TextToEncOrDec
+	EncType string
+	Res     string
+}
+
 func GetUserId() int {
 	return 1
 }
@@ -137,27 +143,26 @@ func (a *Application) Run() {
 			c.Redirect(301, "/home")
 		}
 
-		MealsIDs, err := a.repo.GetMealsIDsByMilkRequestID(index)
+		TextIDs, err := a.repo.GetTextsByOrderId(index)
 		if err != nil {
 			log.Println("unable to get MealsIDsByCartID")
 			c.Error(err)
 			return
 		}
 
-		MealsInCart := []ds.Meals{}
-		for _, v := range MealsIDs {
-			meal_tmp, err := a.repo.GetMealByID(v.ChildMealID)
+		TextsInCart := []OrderShowText{}
+		for _, v := range TextIDs {
+			text_tmp, err := a.repo.GetTextByID(v.TextID)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			MealsInCart = append(MealsInCart, meal_tmp[0])
-			log.Println(v.ChildMealID)
+			TextsInCart = append(TextsInCart, OrderShowText{Text: *text_tmp, EncType: v.EncType, Res: v.Res})
 		}
 
 		c.HTML(http.StatusOK, "encordecorder.html", gin.H{
 			"title":     "Main website",
-			"card_data": CartInfoFunc(),
+			"card_data": TextsInCart,
 		})
 	})
 
