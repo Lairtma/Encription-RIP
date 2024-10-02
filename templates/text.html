@@ -19,7 +19,7 @@
     <div class="card">
         <img src="{{ .card_data.Img }}" class="card_img">
         <div class="info">
-            <p class="card_text text">{{ .card_data.Text }}</p>
+            <p class="card_text text">{{ replaceNewline .card_data.Text }}</p>
             <select name="type" id="type" class="selector btn text">
                 {{ if .card_data.Enc }}
                 <option value="encryption">Изначальный</option>

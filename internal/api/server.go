@@ -55,7 +55,7 @@ func (a *Application) Run() {
 	var err error
 	r.SetFuncMap(template.FuncMap{
 		"replaceNewline": func(text string) template.HTML {
-			return template.HTML(strings.ReplaceAll(text, "\n", "<br>"))
+			return template.HTML(strings.ReplaceAll(text, "/n", "<br>"))
 		},
 		"contains": func(s, substr string) bool {
 			return strings.Contains(s, substr)
@@ -127,6 +127,46 @@ func (a *Application) Run() {
 		})
 	})
 
+	r.POST("/textsencordec", func(c *gin.Context) {
+
+		id := c.PostForm("add")
+		log.Println(id)
+
+		textId, err := strconv.Atoi(id)
+
+		text, err := a.repo.GetTextByID(textId)
+		var encType string
+		if text.Enc {
+			encType = "Тип:/nШифрование с битом чётности"
+		} else {
+			encType = "Тип:/nДешифрование с битом чётности"
+		}
+
+		if err != nil { // если не получилось
+			log.Printf("cant transform ind", err)
+			c.Error(err)
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		order_work, err := a.repo.GetWorkingOrderByUserId(GetUserId())
+		var order_ID int
+		if len(order_work) == 0 {
+			new_order, err := a.repo.CreateOrder(GetUserId(), GetModaratorId())
+			if err != nil {
+				log.Println("unable to create milk request")
+			}
+			order_ID = new_order[0].Id
+		} else {
+			order_ID = order_work[0].Id
+		}
+		position, err := a.repo.GetTextIdsByOrderId(order_ID)
+		a.repo.AddToOrder(order_ID, textId, len(position)+1, encType)
+
+		c.Redirect(301, "/textsencordec")
+
+	})
+
 	r.GET("/encordecorder/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		index, err := strconv.Atoi(id)
@@ -135,12 +175,12 @@ func (a *Application) Run() {
 			return
 		}
 
-		order_status, err := a.repo.GetOrderStatusByID(index)
+		order, err := a.repo.GetOrderByID(index)
 		if err != nil {
 			log.Printf("cant get cart by id %v", err)
 		}
-		if order_status == 3 {
-			c.Redirect(301, "/home")
+		if order.Status == 3 {
+			c.Redirect(301, "/textsencordec")
 		}
 
 		TextIDs, err := a.repo.GetTextsByOrderId(index)
@@ -159,11 +199,40 @@ func (a *Application) Run() {
 			}
 			TextsInCart = append(TextsInCart, OrderShowText{Text: *text_tmp, EncType: v.EncType, Res: v.Res})
 		}
-
+		userFio, err := a.repo.GetUserFioById(order.CreatorID)
+		if err != nil {
+			c.Error(err)
+			return
+		}
 		c.HTML(http.StatusOK, "encordecorder.html", gin.H{
 			"title":     "Main website",
+			"orderId":   index,
 			"card_data": TextsInCart,
+			"user":      userFio,
 		})
+	})
+
+	r.POST("/encordecorder/:id", func(c *gin.Context) {
+
+		id := c.Param("id")
+		index, err := strconv.Atoi(id)
+		if err != nil { // если не получилось
+			log.Printf("cant get cart by id %v", err)
+			c.Error(err)
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		err = a.repo.DeleteOrder(index)
+		if err != nil { // если не получилось
+			log.Printf("cant delete cart by id %v", err)
+			c.Error(err)
+			c.String(http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		c.Redirect(301, "/textsencordec")
+
 	})
 
 	r.GET("/text/:id", func(c *gin.Context) {

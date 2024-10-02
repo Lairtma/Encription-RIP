@@ -43,6 +43,10 @@
         </div>
         <div class="down">
             <button onclick="window.location = 'http://localhost:8080/text/{{ .Id }}'" class="card_button btn text">Подробнее</button>
+            <form action="/textsencordec" method="post">
+                <input type="hidden" name="add" value="{{.Id }}">
+                <button class="card_button btn text">Добавить</button>
+            </form>
         </div>
     </div>
     {{ end }}

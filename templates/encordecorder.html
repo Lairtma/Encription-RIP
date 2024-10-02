@@ -14,7 +14,13 @@
     </div>
 </header>
 <div class="down_nav">
-    <p class="text">Заказчик: Петров Никита Алексеевич</p>
+    <form action="/encordecorder/{{.orderId}}" method="post">
+    <p class="text">Заказчик: {{ .user }}</p>
+        <input type="hidden" name="delete" value="{{.orderId}}">
+        <button class="btn cart_btn">
+            <img src="http://localhost:9000/lab1/trash-can.png" class="cart_img">
+        </button>
+    </form>
 </div>
 <div class="cards">
     {{ range .card_data }}

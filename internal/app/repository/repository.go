@@ -26,7 +26,7 @@ func New(dsn string) (*Repository, error) {
 
 func (r *Repository) GetAllTexts() ([]ds.TextToEncOrDec, error) {
 	var prods []ds.TextToEncOrDec
-	err := r.db.Where("status=true").Find(&prods).Error
+	err := r.db.Where("status=true").Order("id").Find(&prods).Error
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (r *Repository) GetTextByID(textId int) (*ds.TextToEncOrDec, error) {
 
 func (r *Repository) GetTextByType(encType bool) ([]ds.TextToEncOrDec, error) {
 	var text []ds.TextToEncOrDec
-	err := r.db.Where("enc = ?", encType).First(&text).Error
+	err := r.db.Where("enc = ?", encType).Find(&text).Error
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +94,9 @@ func (r *Repository) GetOrderByID(id int) (*ds.EncOrDecOrder, error) { // ?
 	return order, nil
 }
 
-func (r *Repository) AddToOrder(orderId int, textId int, position int) error {
-	query := "INSERT INTO order_texts (order_id, text_id, position) VALUES (?, ?, ?)"
-	err := r.db.Exec(query, orderId, textId, position).Error
+func (r *Repository) AddToOrder(orderId int, textId int, position int, encType string) error {
+	query := "INSERT INTO order_texts (order_id, text_id, position, enc_type) VALUES (?, ?, ?, ?)"
+	err := r.db.Exec(query, orderId, textId, position, encType).Error
 	if err != nil {
 		return fmt.Errorf("failed to add to order: %w", err)
 	}
@@ -133,7 +133,7 @@ func (r *Repository) GetTextIdsByOrderId(orderID int) ([]int, error) {
 }
 
 func (r *Repository) DeleteOrder(id int) error {
-	err := r.db.Exec("UPDATE order_texts SET status = ? WHERE id = ?", 3, id).Error
+	err := r.db.Exec("UPDATE enc_or_dec_orders SET status = ? WHERE id = ?", 3, id).Error
 	if err != nil {
 		return err
 	}
@@ -147,4 +147,13 @@ func (r *Repository) GetOrderStatusByID(id int) (int, error) {
 		return -1, err
 	}
 	return order.Status, nil
+}
+
+func (r *Repository) GetUserFioById(id int) (string, error) {
+	user := &ds.Users{}
+	err := r.db.Where("id = ?", id).First(user).Error
+	if err != nil {
+		return "", err
+	}
+	return user.FIO, nil
 }
