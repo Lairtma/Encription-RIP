@@ -14,7 +14,7 @@
     </div>
 </header>
 <div class="down_nav">
-    <select name="type" id="type" class="selector btn text" onchange="window.location = 'http://localhost:8080/textsencordec?query=' + this.value">
+    <select name="type" id="type" class="selector btn text" onchange="window.location = 'http://localhost:8080/textsencordec?encordec=' + this.value">
         <option class="select_option" value="">Тип</option>
         {{ if contains .query "en" }}
         <option class="select_option" value="en" selected>Изначальный</option>

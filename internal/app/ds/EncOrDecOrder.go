@@ -12,4 +12,5 @@ type EncOrDecOrder struct {
 	ModeratorID int
 	Creator     Users `gorm:"foreignKey:CreatorID"`
 	Moderator   Users `gorm:"foreignKey:ModeratorID"`
+	Priority    int
 }

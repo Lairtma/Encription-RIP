@@ -1,8 +1,9 @@
 package ds
 
 type OrderText struct {
-	OrderID  int            `gorm:"primaryKey"`
-	TextID   int            `gorm:"primaryKey"`
+	Id       int            `gorm:"primaryKey"`
+	OrderID  int            `gorm:"unique"`
+	TextID   int            `gorm:"unique"`
 	Order    EncOrDecOrder  `gorm:"primaryKey;foreignKey:OrderID"`
 	Text     TextToEncOrDec `gorm:"primaryKey;foreignKey:TextID"`
 	Position int

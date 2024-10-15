@@ -72,7 +72,7 @@ func (a *Application) Run() {
 	r.Static("/css", "./resources/css")
 
 	r.GET("/textsencordec", func(c *gin.Context) {
-		encordec := c.Query("query") // Получаем поисковый запрос из URL
+		encordec := c.Query("encordec") // Получаем поисковый запрос из URL
 
 		var FiltredTexts []ds.TextToEncOrDec
 
@@ -209,6 +209,7 @@ func (a *Application) Run() {
 			"orderId":   index,
 			"card_data": TextsInCart,
 			"user":      userFio,
+			"priority":  order.Priority,
 		})
 	})
 

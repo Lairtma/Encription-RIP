@@ -75,6 +75,7 @@ func (r *Repository) CreateOrder(userId int, moderatorId int) ([]ds.EncOrDecOrde
 		DateUpdate:  time.Now(),
 		CreatorID:   userId,
 		ModeratorID: moderatorId,
+		Priority:    1,
 	}
 	err := r.db.Create(&newOrder).Error
 	if err != nil {
@@ -95,8 +96,14 @@ func (r *Repository) GetOrderByID(id int) (*ds.EncOrDecOrder, error) { // ?
 }
 
 func (r *Repository) AddToOrder(orderId int, textId int, position int, encType string) error {
-	query := "INSERT INTO order_texts (order_id, text_id, position, enc_type) VALUES (?, ?, ?, ?)"
-	err := r.db.Exec(query, orderId, textId, position, encType).Error
+	orderText := ds.OrderText{
+		OrderID:  orderId,
+		TextID:   textId,
+		Position: position,
+		EncType:  encType,
+	}
+
+	err := r.db.Create(&orderText).Error
 	if err != nil {
 		return fmt.Errorf("failed to add to order: %w", err)
 	}
