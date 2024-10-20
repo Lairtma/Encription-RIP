@@ -2,9 +2,15 @@ package api
 
 import (
 	"RIP/internal/app/schemas"
+	"bytes"
+	"context"
 	"github.com/gin-gonic/gin"
+	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 )
 
 func (a *Application) GetAllTexts(c *gin.Context) {
@@ -140,13 +146,36 @@ func (a *Application) AddTextToOrder(c *gin.Context) {
 
 func (a *Application) ChangePic(c *gin.Context) {
 	var request schemas.ChangePicRequest
+	var err error
 	request.ID = c.Param("Id")
-	if err := c.ShouldBindJSON(&request); err != nil {
+	file, err := c.FormFile("img")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	log.Println(request.ID, request.Img)
-	err := a.repo.ChangePicByID(request.ID, request.Img)
+	openFile, err := file.Open()
+	defer openFile.Close()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	byt, err := ioutil.ReadAll(openFile)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	reader := bytes.NewReader(byt)
+	_, err = a.minioClient.PutObject(context.Background(), "lab1", file.Filename, reader, int64(file.Size), minio.PutObjectOptions{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	url, err := a.minioClient.PresignedGetObject(context.Background(), "lab1", file.Filename, time.Second*24*60*60, nil)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err = a.repo.ChangePicByID(request.ID, strings.Split(url.String(), "?")[0])
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

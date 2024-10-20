@@ -6,6 +6,7 @@ import (
 	"RIP/internal/app/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"log"
 )
 
@@ -59,6 +60,22 @@ func New() (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	endpoint := "localhost:9000"
+	accessKeyID := "minio"
+	secretAccessKey := "minio124"
+	useSSL := false
+
+	// Initialize minio client object.
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: useSSL,
+	})
+	if err != nil {
+		log.Println(err)
+	}
+
+	app.minioClient = minioClient
 
 	return &app, nil
 }
