@@ -29,8 +29,12 @@ type AddTextToOrderRequest struct {
 }
 
 type ChangePicRequest struct {
-	ID  string `json:"id"`
+	Id  string `json:"id"`
 	Img string `json:"image_link"`
+}
+
+type DeletePicRequest struct {
+	Id string `json:"id"`
 }
 
 ///MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS///

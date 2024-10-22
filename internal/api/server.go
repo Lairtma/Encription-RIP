@@ -27,7 +27,8 @@ func (a *Application) Run() {
 	r.DELETE("/api/texts/:Id", a.DeleteText)
 	r.PUT("/api/texts/:Id", a.UpdateText)
 	r.POST("/api/text_to_order/:Id", a.AddTextToOrder)
-	r.POST("api/text/change_pic/:Id", a.ChangePic)
+	r.POST("api/text/pic/:Id", a.ChangePic)
+	r.DELETE("api/text/pic/:Id", a.DeletePic)
 
 	r.GET("/api/order", a.GetAllOrdersWithParams)
 	r.GET("/api/order/:Id", a.GetOrder)

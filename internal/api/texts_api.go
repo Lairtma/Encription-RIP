@@ -147,7 +147,7 @@ func (a *Application) AddTextToOrder(c *gin.Context) {
 func (a *Application) ChangePic(c *gin.Context) {
 	var request schemas.ChangePicRequest
 	var err error
-	request.ID = c.Param("Id")
+	request.Id = c.Param("Id")
 	file, err := c.FormFile("img")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -175,10 +175,34 @@ func (a *Application) ChangePic(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = a.repo.ChangePicByID(request.ID, strings.Split(url.String(), "?")[0])
+	err = a.repo.ChangePicByID(request.Id, strings.Split(url.String(), "?")[0])
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, "Text Pic was updated")
+}
+
+func (a *Application) DeletePic(c *gin.Context) {
+	var request schemas.DeletePicRequest
+	var err error
+	request.Id = c.Param("Id")
+
+	text, err := a.repo.GetTextByID(request.Id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	splitedText := strings.Split(text.Img, "/")
+	err = a.minioClient.RemoveObject(context.Background(), "lab1", splitedText[len(splitedText)-1], minio.RemoveObjectOptions{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err = a.repo.ChangePicByID(request.Id, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, "Text Pic was deleted")
 }
