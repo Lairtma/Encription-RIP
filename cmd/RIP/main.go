@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
-
+	_ "RIP/docs"
 	"RIP/internal/api"
+	"log"
 )
 
 func main() {

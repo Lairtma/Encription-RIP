@@ -3,10 +3,15 @@ package repository
 import (
 	"RIP/internal/app/ds"
 	"RIP/internal/app/schemas"
+	token2 "RIP/internal/token"
+	"errors"
 	"fmt"
+	"github.com/go-redis/redis"
+	log "github.com/sirupsen/logrus"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
+	"os"
 	"time"
 )
 
@@ -14,6 +19,8 @@ import (
 
 type Repository struct {
 	db *gorm.DB
+
+	rd *redis.Client
 }
 
 func New(dsn string) (*Repository, error) {
@@ -21,8 +28,21 @@ func New(dsn string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ENDPOINT"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+
+	err = redisClient.Ping().Err()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repository{
 		db: db,
+		rd: redisClient,
 	}, nil
 }
 
@@ -174,11 +194,11 @@ func (r *Repository) CreateUser(user ds.Users) error {
 	return nil
 }
 
-func (r *Repository) CreateText(text ds.TextToEncOrDec) error {
+func (r *Repository) CreateText(text ds.TextToEncOrDec) (int, error) {
 	if err := r.db.Create(&text).Error; err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return text.Id, nil
 }
 
 func (r *Repository) DeleteTextByID(id string) error {
@@ -313,6 +333,53 @@ func (r *Repository) UpdatePositionTextInOrder(id int, text_id int, position int
 	}
 	order_text.Position = position
 	if err := r.db.Save(&order_text).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Repository) RegisterUser(user ds.Users) (error, int) {
+	err := r.db.First(&user, "login = ?", user.Login).Error
+	if err == nil {
+		return err, 0 //пользователь с таким логином уже есть
+	}
+	if err = r.db.Create(&user).Error; err != nil {
+		return err, 1 //пользователь создан
+	}
+	return nil, 2 // произошла ошибка с созданием пользователя
+}
+
+func (r *Repository) LoginUser(user ds.Users) (error, string) {
+	var user_in_db ds.Users
+	err := r.db.First(&user_in_db, "login = ?", user.Login).Error
+	if err != nil {
+		return errors.New("Такой пользователь не существует"), ""
+	}
+	if user.Password != user_in_db.Password {
+		return errors.New("Пароли не совпадают"), ""
+	}
+
+	token, err := token2.GenerateJWTToken(user_in_db)
+	if err != nil {
+		return err, ""
+	}
+
+	return nil, token
+
+}
+
+func (r *Repository) CheckBlacklist(key string) (string, error) {
+	result, err := r.rd.Get(key).Result()
+	if err != nil {
+		return "", err
+	}
+	return result, err
+}
+
+func (r *Repository) LogoutUser(token string) error {
+	exp := 24 * time.Hour
+	err := r.rd.Set(token, "revoked", exp).Err()
+	if err != nil {
 		return err
 	}
 	return nil

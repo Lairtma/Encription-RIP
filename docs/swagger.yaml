@@ -1,0 +1,500 @@
+basePath: /
+definitions:
+  ds.EncOrDecOrder:
+    properties:
+      creator:
+        $ref: '#/definitions/ds.Users'
+      creator_id:
+        type: integer
+      date_create:
+        type: string
+      date_finish:
+        type: string
+      date_update:
+        type: string
+      id:
+        type: integer
+      moderator:
+        $ref: '#/definitions/ds.Users'
+      moderator_id:
+        type: integer
+      priority:
+        type: integer
+      status:
+        type: integer
+    type: object
+  ds.TextToEncOrDec:
+    properties:
+      byte_len:
+        type: integer
+      enc:
+        type: boolean
+      id:
+        type: integer
+      img:
+        type: string
+      status:
+        type: boolean
+      text:
+        type: string
+    type: object
+  ds.Users:
+    properties:
+      fio:
+        type: string
+      id:
+        type: integer
+      is_moderator:
+        type: boolean
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  schemas.AddTextToOrderResponce:
+    properties:
+      messageResponse:
+        type: string
+      orderId:
+        type: integer
+      textId:
+        type: integer
+    type: object
+  schemas.CreateTextRequest:
+    properties:
+      text:
+        $ref: '#/definitions/ds.TextToEncOrDec'
+    type: object
+  schemas.CreateTextResponse:
+    properties:
+      id:
+        type: integer
+      messageResponse:
+        type: string
+    type: object
+  schemas.DeleteTextResponse:
+    properties:
+      id:
+        type: integer
+      messageResponse:
+        type: string
+    type: object
+  schemas.GetAllOrdersWithParamsResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/ds.EncOrDecOrder'
+        type: array
+    type: object
+  schemas.GetAllTextsResponse:
+    properties:
+      count:
+        type: integer
+      text_req_ID:
+        type: integer
+      texts:
+        items:
+          $ref: '#/definitions/ds.TextToEncOrDec'
+        type: array
+    type: object
+  schemas.GetTextResponse:
+    properties:
+      text:
+        $ref: '#/definitions/ds.TextToEncOrDec'
+    type: object
+  schemas.LoginUserRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  schemas.RegisterUserRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  schemas.ResponseMessage:
+    type: object
+  schemas.UpdateTextRequest:
+    properties:
+      id:
+        type: string
+      text:
+        $ref: '#/definitions/ds.TextToEncOrDec'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is API for Text en/decryption requests
+  title: DevIntApp
+  version: "1.1"
+paths:
+  /api/login_user:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token.
+      parameters:
+      - description: User login data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.LoginUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User logged in successfully
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Login a user
+      tags:
+      - users
+  /api/logout:
+    post:
+      consumes:
+      - application/json
+      description: Log out the user by blacklisting the token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User logged out successfully
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "401":
+          description: Missing token
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - users
+  /api/order:
+    get:
+      consumes:
+      - application/json
+      description: Получить все заявки на шифрование с возможностью фильтрации по
+        статусу и датам
+      parameters:
+      - description: Статус заявки
+        in: query
+        name: status
+        type: string
+      - description: Наличие статуса
+        in: query
+        name: is_status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetAllOrdersWithParamsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      security:
+      - BearerAuth: []
+      summary: Получить все заявки на шифрование с параметрами
+      tags:
+      - orders
+  /api/order_text/{Id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить текст из запроса на шифрование по ID запроса и TextId
+      parameters:
+      - description: ID запроса на шифрование
+        in: path
+        name: Id
+        required: true
+        type: string
+      - description: Id текста
+        in: query
+        name: TextId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Text was deleted from order
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Удалить текст из запроса на шифрование
+      tags:
+      - text_and_order
+  /api/register_user:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user.
+      parameters:
+      - description: User registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "409":
+          description: User with this login already exists
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Register a new user
+      tags:
+      - users
+  /api/text/pic/{Id}:
+    post:
+      consumes:
+      - application/json
+      description: Change text`s picture using it's ID
+      parameters:
+      - description: Text Id
+        in: path
+        name: Id
+        required: true
+        type: string
+      - description: File
+        in: formData
+        name: img
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Picture was changed sucessfully
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Change picture By ID
+      tags:
+      - texts
+  /api/text_to_order/{Id}:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint allows you to add a text to a order by it's ID.
+      parameters:
+      - description: Text Id
+        in: path
+        name: Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Text added successfully
+          schema:
+            $ref: '#/definitions/schemas.AddTextToOrderResponce'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Add text to order
+      tags:
+      - texts
+  /api/texts:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all texts.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of texts retrieved successfully
+          schema:
+            $ref: '#/definitions/schemas.GetAllTextsResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      security:
+      - BearerAuth: []
+      summary: Get all texts
+      tags:
+      - texts
+    post:
+      consumes:
+      - application/json
+      description: Create text with properties
+      parameters:
+      - description: Text data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateTextRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/schemas.CreateTextResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Create text
+      tags:
+      - texts
+  /api/texts/{Id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete text using it's ID
+      parameters:
+      - description: Text Id
+        in: path
+        name: Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.DeleteTextResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Delete text by ID
+      tags:
+      - texts
+    get:
+      consumes:
+      - application/json
+      description: Get info about text using its ID
+      parameters:
+      - description: Text Id
+        in: path
+        name: Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetTextResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      security:
+      - BearerAuth: []
+      summary: Get text by ID
+      tags:
+      - texts
+    put:
+      consumes:
+      - application/json
+      description: Update text using it's ID with parametres
+      parameters:
+      - description: Text Id
+        in: path
+        name: Id
+        required: true
+        type: string
+      - description: Update text data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateTextRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.DeleteTextResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/schemas.ResponseMessage'
+      summary: Update text by ID
+      tags:
+      - texts
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

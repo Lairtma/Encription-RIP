@@ -14,12 +14,6 @@ type GetTextResponse struct {
 	Text ds.TextToEncOrDec `json:"text"`
 }
 
-type CreateMealResponse struct{}
-
-type DeleteMealResponse struct{}
-
-///MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS///
-
 type GetAllOrdersWithParamsResponse struct {
 	Orders []ds.EncOrDecOrder
 }
@@ -33,7 +27,25 @@ type GetOrderResponse struct {
 	Count int                 `json:"count"`
 	Texts []ds.TextToEncOrDec `json:"texts"`
 }
+type CreateTextResponse struct {
+	Id              int
+	MessageResponse string
+}
+
+type AddTextToOrderResponce struct {
+	TextId          int
+	OrderId         int
+	MessageResponse string
+}
+
+type DeleteTextResponse struct {
+	Id              int
+	MessageResponse string
+}
 
 type DeleteMealFromMilkReqResponse struct{}
 
 type UpdateOrderMilkReqMealsResponse struct{}
+
+type ResponseMessage struct {
+}

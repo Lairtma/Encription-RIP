@@ -10,9 +10,22 @@ import (
 	"time"
 )
 
+// GetAllOrdersWithParams godoc
+// @Summary Получить все заявки на шифрование с параметрами
+// @Description Получить все заявки на шифрование с возможностью фильтрации по статусу и датам
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param status query string false "Статус заявки"
+// @Param is_status query string false "Наличие статуса"
+// @Success 200 {object} schemas.GetAllOrdersWithParamsResponse
+// @Failure 400 {object} schemas.ResponseMessage
+// @Failure 500 {object} schemas.ResponseMessage
+// @Router /api/order [get]
+// @Security BearerAuth
 func (a *Application) GetAllOrdersWithParams(c *gin.Context) {
 	var request schemas.GetAllOrdersWithParamsRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
+	if err := c.ShouldBindQuery(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

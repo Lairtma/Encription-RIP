@@ -37,8 +37,6 @@ type DeletePicRequest struct {
 	Id string `json:"id"`
 }
 
-///MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS MILK REQUESTS///
-
 type GetAllOrdersWithParamsRequest struct {
 	HavingStatus bool      `json:"is_status"`
 	Status       int       `json:"status"`
@@ -84,6 +82,15 @@ type UpdatePositionTextInOrderRequest struct {
 	Position int `json:"position"`
 }
 
-type CreateUserRequest struct {
-	ds.Users
+type RegisterUserRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+type LoginUserRequest struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
+
+type LogoutUserRequest struct {
 }

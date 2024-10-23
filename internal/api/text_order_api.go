@@ -7,6 +7,17 @@ import (
 	"strconv"
 )
 
+// @Summary Удалить текст из запроса на шифрование
+// @Description Удалить текст из запроса на шифрование по ID запроса и TextId
+// @Tags text_and_order
+// @Accept json
+// @Produce json
+// @Param Id path string true "ID запроса на шифрование"
+// @Param TextId query string true "Id текста"
+// @Success 200 {string} string "Text was deleted from order"
+// @Failure 400 {object} schemas.ResponseMessage
+// @Failure 500 {object} schemas.ResponseMessage
+// @Router /api/order_text/{Id} [delete]
 func (a *Application) DeleteTextFromOrder(c *gin.Context) {
 	var request schemas.DeleteTextFromOrderRequest
 	request.Id = c.Param("Id")
