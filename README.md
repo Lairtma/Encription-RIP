@@ -8,3 +8,5 @@ BACKEND:
 ЛР3 - https://github.com/Lairtma/Encription-RIP/tree/SystemBackend
 
 ЛР4 - https://github.com/Lairtma/Encription-RIP/tree/SwaggerRedis
+
+ЛР5 - https://github.com/Lairtma/RIP-Frontend/tree/SPA-for-guest
